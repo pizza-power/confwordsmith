@@ -3,14 +3,14 @@ confluence:
   token: ""
   auth_type: "bearer"  # bearer | basic
   username: ""          # only for basic auth
-  verify_ssl: true
+  verify_ssl: false
   proxy: ""
-  timeout: 30
+  timeout: 10
   max_retries: 3
   retry_backoff: 2.0
   rate_limit_delay: 0.5
   threads: 4
-  max_pages: 0  # 0 = unlimited
+  max_pages: 1000  # 0 = unlimited
 
 spaces:
   include: []   # empty = all spaces
@@ -25,7 +25,7 @@ filters:
   min_length: 3
   max_length: 64
   preserve_acronyms: true
-  acronym_min_length: 2
+  acronym_min_length: 3
   acronym_max_length: 10
 
 stopwords:
