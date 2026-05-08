@@ -84,6 +84,7 @@ python main.py \
 | `--no-verify-ssl` | Disable SSL verification | - |
 | `--exclude-regex` | Regex patterns to exclude | none |
 | `--dictionary` | Dictionary file paths | none |
+| `--max-spaces` | Limit number of spaces to process | 0 (unlimited) |
 | `--cache-db` | SQLite database path | `./cache/confwordsmith.db` |
 | `--verbose` / `-v` | Debug logging | off |
 
@@ -109,6 +110,7 @@ confluence:
 spaces:
   include: [ENG, IT, HR]   # empty = all spaces
   exclude: [ARCHIVE]
+  max_spaces: 0            # 0 = unlimited; set to N to cap space count
 ```
 
 **Token filtering:**
@@ -216,6 +218,7 @@ Enterprise acronyms (IAM, HRIS, SCCM, VDI, JKJM, etc.) are always preserved rega
 - **Incremental mode**: Use `--incremental` for repeated runs -- only fetches changed pages
 - **Max pages**: Set `max_pages` in config to cap retrieval during initial testing
 - **SQLite WAL mode**: Enabled by default for concurrent read/write performance
+- **Max spaces**: Use `--max-spaces N` to limit how many spaces are processed (useful for quick test runs)
 - **Large instances**: For 10k+ pages, consider space-by-space runs with `--spaces`
 - **Memory**: Token deduplication is handled in SQLite, keeping memory usage bounded
 

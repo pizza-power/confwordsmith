@@ -149,6 +149,14 @@ class ConfluenceClient:
                     break
                 start += 50
 
+        max_spaces = self.cfg.get("spaces", {}).get("max_spaces", 0)
+        if max_spaces > 0 and len(spaces) > max_spaces:
+            logger.info(
+                "Limiting to %d of %d available spaces (--max-spaces)",
+                max_spaces, len(spaces),
+            )
+            spaces = spaces[:max_spaces]
+
         logger.info("Found %d spaces after filtering", len(spaces))
         return spaces
 

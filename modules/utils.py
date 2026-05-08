@@ -73,6 +73,8 @@ def merge_cli_into_config(cfg: dict[str, Any], args: Any) -> dict[str, Any]:
         cfg.setdefault("dictionary", {})["paths"] = args.dictionary
     if getattr(args, "cache_db", None):
         cfg.setdefault("cache", {})["database"] = args.cache_db
+    if getattr(args, "max_spaces", None) is not None:
+        cfg.setdefault("spaces", {})["max_spaces"] = args.max_spaces
     if getattr(args, "mutations", None):
         cfg.setdefault("mutations", {})["profile"] = args.mutations
     if getattr(args, "verbose", False):

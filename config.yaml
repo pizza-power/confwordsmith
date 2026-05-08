@@ -15,6 +15,7 @@ confluence:
 spaces:
   include: []   # empty = all spaces
   exclude: []
+  max_spaces: 0  # 0 = unlimited; set to N to only process the first N spaces
 
 labels:
   include: []

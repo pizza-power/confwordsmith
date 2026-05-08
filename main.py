@@ -79,6 +79,8 @@ def parse_args() -> argparse.Namespace:
                     help="Paths to dictionary files for comparison")
     p.add_argument("--cache-db", default=None, dest="cache_db",
                     help="Path to SQLite cache database")
+    p.add_argument("--max-spaces", type=int, default=None, dest="max_spaces",
+                    help="Limit number of spaces to process (0 = unlimited)")
     p.add_argument("--verbose", "-v", action="store_true",
                     help="Enable debug logging")
     return p.parse_args()
