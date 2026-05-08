@@ -24,7 +24,7 @@ Enterprise password wordlist generator that extracts organizational terminology 
 ## Installation
 
 ```bash
-git clone <repo-url> confwordsmith
+git clone https://github.com/pizza-power/confwordsmith confwordsmith
 cd confwordsmith
 python3 -m venv venv
 source venv/bin/activate
@@ -36,14 +36,14 @@ Requires Python 3.10+.
 ## Quick Start
 
 ```bash
-# Basic usage with Confluence Cloud
+# Basic usage with Confluence Cloud (untested)
 python main.py \
   --url https://yourcompany.atlassian.net \
   --token YOUR_API_TOKEN \
   --spaces ENG,IT,HR \
   --output ./output
 
-# Incremental run (only fetch changed pages)
+# Incremental run (only fetch changed pages) (untested)
 python main.py \
   --url https://yourcompany.atlassian.net \
   --token YOUR_API_TOKEN \
