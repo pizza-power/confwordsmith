@@ -1,0 +1,103 @@
+confluence:
+  url: "https://confluence.example.com"
+  token: ""
+  auth_type: "bearer"  # bearer | basic
+  username: ""          # only for basic auth
+  verify_ssl: true
+  proxy: ""
+  timeout: 30
+  max_retries: 3
+  retry_backoff: 2.0
+  rate_limit_delay: 0.5
+  threads: 4
+  max_pages: 0  # 0 = unlimited
+
+spaces:
+  include: []   # empty = all spaces
+  exclude: []
+
+labels:
+  include: []
+  exclude: []
+
+filters:
+  exclude_regex: []
+  min_length: 3
+  max_length: 64
+  preserve_acronyms: true
+  acronym_min_length: 2
+  acronym_max_length: 10
+
+stopwords:
+  use_default: true
+  custom: []
+
+whitelist: []
+blacklist: []
+
+dictionary:
+  paths: []
+  mode: "tag"  # remove | tag | preserve
+
+scoring:
+  title_weight: 3.0
+  heading_weight: 2.5
+  frequency_weight: 1.5
+  multi_space_weight: 2.0
+  recency_weight: 1.0
+  camelcase_weight: 1.5
+  acronym_weight: 2.0
+  alphanumeric_weight: 1.2
+  length_penalty_short: 0.5
+  length_penalty_long: 0.8
+  dictionary_penalty: 0.3
+
+mutations:
+  profile: "balanced"  # aggressive | balanced | minimal
+  years:
+    - 2024
+    - 2025
+    - 2026
+  use_current_year: true
+  seasons:
+    - Spring
+    - Summer
+    - Fall
+    - Winter
+  separators:
+    - ""
+    - "_"
+    - "-"
+    - "."
+  numeric_suffixes:
+    - "1"
+    - "12"
+    - "123"
+    - "1234"
+    - "01"
+    - "99"
+  symbol_suffixes:
+    - "!"
+    - "@"
+    - "#"
+    - "$"
+    - "!!"
+
+output:
+  directory: "./output"
+  formats:
+    raw_corpus: true
+    cleaned_candidates: true
+    high_confidence: true
+    mutations: true
+    hashcat_rules: true
+    prince_input: true
+    statistics: true
+  high_confidence_threshold: 5.0
+
+cache:
+  database: "./cache/confwordsmith.db"
+
+logging:
+  level: "INFO"
+  file: "./logs/confwordsmith.log"
