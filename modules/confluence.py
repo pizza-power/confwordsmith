@@ -10,6 +10,7 @@ from typing import Any, Optional
 from urllib.parse import urljoin
 
 import requests
+import urllib3
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
@@ -37,6 +38,9 @@ class ConfluenceClient:
         self.threads: int = cc.get("threads", 4)
         self.storage = storage
         self.cfg = cfg
+
+        if not self.verify_ssl:
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
         self._is_cloud: Optional[bool] = None
         self.session = self._build_session(cc)
@@ -152,6 +156,7 @@ class ConfluenceClient:
 
     def list_pages_in_space(self, space_key: str) -> list[dict[str, Any]]:
         """Return lightweight page stubs (id, title, version, updated) for a space."""
+        logger.info("Listing pages in space: %s", space_key)
         pages: list[dict[str, Any]] = []
         collected = 0
 
@@ -332,9 +337,18 @@ class ConfluenceClient:
 
         results: list[dict[str, Any]] = []
 
+        total = len(stubs_to_fetch)
+        logger.info("Fetching %d pages with %d threads", total, self.threads)
+
         def _fetch_one(stub: dict[str, Any]) -> Optional[dict[str, Any]]:
             try:
-                return self.fetch_page_content(stub["id"], stub.get("space_key", ""))
+                page = self.fetch_page_content(stub["id"], stub.get("space_key", ""))
+                logger.info(
+                    "Fetched [%s] %s (id=%s, v%s)",
+                    page.get("space_key", "?"), page.get("title", "?"),
+                    page.get("page_id", "?"), page.get("version", "?"),
+                )
+                return page
             except requests.RequestException as exc:
                 logger.warning("Failed to fetch page %s: %s", stub["id"], exc)
                 return None
@@ -356,5 +370,5 @@ class ConfluenceClient:
                         author=page_data.get("author", ""),
                     )
 
-        logger.info("Fetched %d pages successfully", len(results))
+        logger.info("Fetched %d / %d pages successfully", len(results), total)
         return results

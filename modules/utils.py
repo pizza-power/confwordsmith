@@ -103,9 +103,13 @@ def setup_logging(cfg: dict[str, Any]) -> logging.Logger:
     fh.setFormatter(fmt)
     logger.addHandler(fh)
 
+    console_fmt = logging.Formatter(
+        "%(asctime)s [%(levelname)-7s] %(message)s",
+        datefmt="%H:%M:%S",
+    )
     sh = logging.StreamHandler(sys.stderr)
-    sh.setLevel(logging.WARNING)
-    sh.setFormatter(fmt)
+    sh.setLevel(getattr(logging, level_name, logging.INFO))
+    sh.setFormatter(console_fmt)
     logger.addHandler(sh)
 
     return logger

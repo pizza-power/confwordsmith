@@ -179,20 +179,22 @@ def run(args: argparse.Namespace) -> None:
         client = ConfluenceClient(cfg, storage)
 
         # Phase 1: Discover spaces
-        logger.info("Phase 1: Discovering spaces")
+        logger.info("Phase 1/6: Discovering spaces on %s", confluence_cfg["url"])
         spaces = client.list_spaces()
         if not spaces:
             logger.warning("No spaces found - check permissions and filters")
             print("Warning: No accessible spaces found.", file=sys.stderr)
             sys.exit(1)
 
-        space_names = [f"{s['key']} ({s['name']})" for s in spaces]
-        logger.info("Spaces: %s", ", ".join(space_names))
+        for sp in spaces:
+            logger.info("  Space: %s (%s)", sp["key"], sp["name"])
+        logger.info("Total spaces: %d", len(spaces))
 
         # Phase 2: Fetch pages
-        logger.info("Phase 2: Fetching pages (incremental=%s)", args.incremental)
+        logger.info("Phase 2/6: Fetching pages (incremental=%s, threads=%d)",
+                     args.incremental, cfg.get("confluence", {}).get("threads", 4))
         pages = client.fetch_pages_incremental(spaces, incremental=args.incremental)
-        logger.info("Retrieved %d pages", len(pages))
+        logger.info("Retrieved %d pages total", len(pages))
 
         if not pages:
             logger.warning("No pages retrieved")
@@ -200,7 +202,7 @@ def run(args: argparse.Namespace) -> None:
             sys.exit(0)
 
         # Phase 3: Extract and tokenize
-        logger.info("Phase 3: Extracting and tokenizing content")
+        logger.info("Phase 3/6: Extracting and tokenizing %d pages", len(pages))
         total_tokens = 0
         for page_data in tqdm(pages, desc="Processing pages", unit="page"):
             page_content = extract_page(page_data)
@@ -236,21 +238,22 @@ def run(args: argparse.Namespace) -> None:
         dict_paths = dict_cfg.get("paths", [])
         dict_mode = dict_cfg.get("mode", "tag")
         if dict_paths:
-            logger.info("Phase 4: Dictionary comparison (mode=%s)", dict_mode)
+            logger.info("Phase 4/6: Dictionary comparison (mode=%s, %d files)", dict_mode, len(dict_paths))
             all_tokens = storage.get_all_tokens()
             compared = compare_dictionary(all_tokens, dict_paths, dict_mode)
             for t in compared:
                 if t.get("dict_match"):
                     storage.mark_dict_match(t["token"])
         else:
-            logger.info("Phase 4: Dictionary comparison skipped (no dictionaries configured)")
+            logger.info("Phase 4/6: Dictionary comparison skipped (no dictionaries configured)")
 
         # Phase 5: Score tokens
-        logger.info("Phase 5: Scoring tokens")
+        logger.info("Phase 5/6: Scoring %d unique tokens", storage.get_token_count())
         score_all_tokens(storage, cfg)
 
         # Phase 6: Generate outputs
-        logger.info("Phase 6: Generating outputs")
+        logger.info("Phase 6/6: Generating output files to %s",
+                     cfg.get("output", {}).get("directory", "./output"))
         output_paths = write_all_outputs(storage, cfg)
 
         elapsed = time.time() - start_time
