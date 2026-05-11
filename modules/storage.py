@@ -208,6 +208,16 @@ class Storage:
         )
         conn.commit()
 
+    def delete_token(self, token: str) -> None:
+        conn = self._get_conn()
+        conn.execute("DELETE FROM tokens WHERE token = ?", (token,))
+        conn.commit()
+
+    def delete_tokens(self, tokens: list[str]) -> None:
+        conn = self._get_conn()
+        conn.executemany("DELETE FROM tokens WHERE token = ?", [(t,) for t in tokens])
+        conn.commit()
+
     def get_all_tokens(self) -> list[dict[str, Any]]:
         conn = self._get_conn()
         rows = conn.execute(

@@ -36,22 +36,24 @@ def write_all_outputs(
         _write_lines(p, token_strings)
         paths["raw_corpus"] = str(p)
 
+    non_dict = [t for t in sorted_tokens if not t.get("dict_match")]
+
     if formats.get("cleaned_candidates", True):
-        cleaned = [t["token"] for t in sorted_tokens if t["score"] > 0]
+        cleaned = [t["token"] for t in non_dict if t["score"] > 0]
         p = out_dir / "cleaned_candidates.txt"
         _write_lines(p, cleaned)
         paths["cleaned_candidates"] = str(p)
 
     if formats.get("high_confidence", True):
-        high = [t["token"] for t in sorted_tokens if t["score"] >= threshold]
+        high = [t["token"] for t in non_dict if t["score"] >= threshold]
         p = out_dir / "high_confidence.txt"
         _write_lines(p, high)
         paths["high_confidence"] = str(p)
 
     if formats.get("mutations", True):
-        bases = [t["token"] for t in sorted_tokens if t["score"] >= threshold * 0.5]
+        bases = [t["token"] for t in non_dict if t["score"] >= threshold * 0.5]
         if not bases:
-            bases = token_strings[:500]
+            bases = [t["token"] for t in non_dict][:500]
         mutated = generate_mutations(bases, cfg)
         p = out_dir / "mutations.txt"
         _write_lines(p, mutated)
@@ -64,7 +66,7 @@ def write_all_outputs(
         paths["hashcat_rules"] = str(p)
 
     if formats.get("prince_input", True):
-        prince = _build_prince_input(sorted_tokens, threshold)
+        prince = _build_prince_input(non_dict, threshold)
         p = out_dir / "prince_input.txt"
         _write_lines(p, prince)
         paths["prince_input"] = str(p)

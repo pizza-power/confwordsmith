@@ -243,6 +243,13 @@ def run(args: argparse.Namespace) -> None:
             logger.info("Phase 4/6: Dictionary comparison (mode=%s, %d files)", dict_mode, len(dict_paths))
             all_tokens = storage.get_all_tokens()
             compared = compare_dictionary(all_tokens, dict_paths, dict_mode)
+
+            compared_set = {t["token"] for t in compared}
+            removed = [t["token"] for t in all_tokens if t["token"] not in compared_set]
+            if removed:
+                storage.delete_tokens(removed)
+                logger.info("Deleted %d dictionary-matched tokens from database", len(removed))
+
             for t in compared:
                 if t.get("dict_match"):
                     storage.mark_dict_match(t["token"])
