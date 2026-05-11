@@ -8,6 +8,27 @@ from typing import Any
 
 logger = logging.getLogger("confwordsmith.filters")
 
+_common_words_cache: set[str] | None = None
+
+
+def _load_common_words(path: str) -> set[str]:
+    """Load a common-words file into a lowercase set, with caching."""
+    global _common_words_cache
+    if _common_words_cache is not None:
+        return _common_words_cache
+    words: set[str] = set()
+    try:
+        with open(path, "r", encoding="utf-8", errors="ignore") as fh:
+            for line in fh:
+                word = line.strip()
+                if word:
+                    words.add(word.lower())
+        logger.info("Loaded %d common words from %s", len(words), path)
+    except OSError as exc:
+        logger.warning("Could not read common words file %s: %s", path, exc)
+    _common_words_cache = words
+    return words
+
 # Noise patterns
 _RE_UUID = re.compile(
     r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
@@ -44,6 +65,9 @@ def filter_tokens(
     whitelist = set(cfg.get("whitelist", []))
     blacklist = set(cfg.get("blacklist", []))
 
+    common_words_path = filter_cfg.get("common_words_file", "")
+    common_words: set[str] = _load_common_words(common_words_path) if common_words_path else set()
+
     passed: list[dict[str, Any]] = []
 
     for entry in tokens:
@@ -71,6 +95,10 @@ def filter_tokens(
             continue
 
         if tok.lower() in stopwords and not _is_enterprise_term(tok):
+            continue
+
+        if common_words and tok.lower() in common_words and not _is_enterprise_term(tok):
+            logger.debug("Common word filtered: %s", tok)
             continue
 
         excluded = False

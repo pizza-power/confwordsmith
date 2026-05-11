@@ -7,6 +7,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
+from .credscanner import CredentialFind, format_credential_line
 from .mutations import generate_mutations
 from .rules import generate_hashcat_rules
 from .storage import Storage
@@ -17,6 +18,7 @@ logger = logging.getLogger("confwordsmith.outputs")
 def write_all_outputs(
     storage: Storage,
     cfg: dict[str, Any],
+    credential_finds: list[CredentialFind] | None = None,
 ) -> dict[str, str]:
     """Generate all configured output files and return path mapping."""
     out_cfg = cfg.get("output", {})
@@ -71,8 +73,20 @@ def write_all_outputs(
         _write_lines(p, prince)
         paths["prince_input"] = str(p)
 
+    if credential_finds:
+        p = out_dir / "found_credentials.txt"
+        cred_lines = [format_credential_line(f) for f in credential_finds]
+        _write_lines(p, cred_lines)
+        paths["found_credentials"] = str(p)
+        logger.info("Credential scanner: %d potential credentials written", len(credential_finds))
+
+        p_values = out_dir / "found_credential_values.txt"
+        cred_values = [f.value for f in credential_finds]
+        _write_lines(p_values, cred_values)
+        paths["found_credential_values"] = str(p_values)
+
     if formats.get("statistics", True):
-        stats = _build_statistics(all_tokens, paths, cfg)
+        stats = _build_statistics(all_tokens, paths, cfg, credential_finds)
         p = out_dir / "statistics.json"
         with open(p, "w", encoding="utf-8") as fh:
             json.dump(stats, fh, indent=2, default=str)
@@ -118,6 +132,7 @@ def _build_statistics(
     all_tokens: list[dict[str, Any]],
     paths: dict[str, str],
     cfg: dict[str, Any],
+    credential_finds: list[CredentialFind] | None = None,
 ) -> dict[str, Any]:
     total = len(all_tokens)
     if total == 0:
@@ -147,7 +162,7 @@ def _build_statistics(
         for t in sorted(all_tokens, key=lambda x: x["score"], reverse=True)[:50]
     ]
 
-    return {
+    stats: dict[str, Any] = {
         "total_tokens": total,
         "high_confidence_count": high_conf,
         "acronym_count": acronyms,
@@ -162,3 +177,20 @@ def _build_statistics(
         "top_tokens": top_tokens,
         "config_profile": cfg.get("mutations", {}).get("profile", "balanced"),
     }
+
+    if credential_finds:
+        high_creds = [f for f in credential_finds if f.confidence == "high"]
+        med_creds = [f for f in credential_finds if f.confidence == "medium"]
+        stats["credentials"] = {
+            "total_found": len(credential_finds),
+            "high_confidence": len(high_creds),
+            "medium_confidence": len(med_creds),
+            "unique_values": len({f.value for f in credential_finds}),
+            "by_pattern": {},
+        }
+        for f in credential_finds:
+            stats["credentials"]["by_pattern"][f.pattern_name] = (
+                stats["credentials"]["by_pattern"].get(f.pattern_name, 0) + 1
+            )
+
+    return stats

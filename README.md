@@ -13,12 +13,14 @@ Enterprise password wordlist generator that extracts organizational terminology 
 - **Multithreaded** page retrieval with rate limiting and retries
 - **Smart tokenization** -- preserves CamelCase, ALLCAPS acronyms, mixed-case enterprise terms
 - **Noise filtering** -- removes UUIDs, hashes, base64 blobs, URLs, minified JS, binary junk
+- **Common word filtering** -- case-insensitive removal of common English words via configurable word list
 - **Weighted scoring** -- ranks candidates by title presence, frequency, multi-space usage, recency
 - **Dictionary comparison** -- optionally diff against rockyou, SecLists, or custom wordlists
 - **Mutation engine** -- generates year/symbol/numeric suffixes with aggressive/balanced/minimal profiles
 - **Hashcat rule generation** -- enterprise-pattern-aware `.rule` files
 - **PRINCE wordlist** output for combinatorial attacks
 - **SQLite caching** for page metadata, tokens, and scores
+- **Credential scanner** -- detects plaintext passwords, API keys, tokens, and connection strings in page content
 - **Configurable** via YAML config file and CLI flags
 
 ## Installation
@@ -119,6 +121,7 @@ filters:
   min_length: 3
   max_length: 64
   preserve_acronyms: true
+  common_words_file: "./common-words.txt"  # case-insensitive; empty = disabled
   exclude_regex:
     - "^test_.*"
 ```
@@ -140,6 +143,12 @@ dictionary:
   mode: "tag"            # remove | tag | preserve
 ```
 
+**Credential scanning:**
+```yaml
+credential_scan:
+  enabled: true          # scan for plaintext passwords, keys, tokens
+```
+
 ## Output Files
 
 | File | Description |
@@ -150,6 +159,8 @@ dictionary:
 | `mutations.txt` | Mutated password candidates (year/symbol/number suffixes) |
 | `hashcat_rules.rule` | Hashcat-compatible rules for enterprise patterns |
 | `prince_input.txt` | Short high-value tokens for PRINCE combinatorial attacks |
+| `found_credentials.txt` | Potential plaintext credentials with context and confidence |
+| `found_credential_values.txt` | Just the raw credential values (one per line) |
 | `statistics.json` | Run statistics, top tokens, score distributions |
 
 ### Sample `statistics.json`
@@ -228,6 +239,7 @@ Enterprise acronyms (IAM, HRIS, SCCM, VDI, JKJM, etc.) are always preserved rega
 confwordsmith/
 ├── main.py              # CLI entry point and orchestration
 ├── config.yaml          # Default configuration
+├── common-words.txt     # Common English words for filtering
 ├── requirements.txt     # Python dependencies
 ├── modules/
 │   ├── confluence.py    # Confluence REST API client
@@ -237,6 +249,7 @@ confwordsmith/
 │   ├── scorer.py        # Weighted token scoring engine
 │   ├── mutations.py     # Password candidate mutation generator
 │   ├── rules.py         # Hashcat rule file generation
+│   ├── credscanner.py   # Plaintext credential detection
 │   ├── outputs.py       # Output file generation
 │   ├── storage.py       # SQLite caching and metadata
 │   └── utils.py         # Config loading, logging, helpers

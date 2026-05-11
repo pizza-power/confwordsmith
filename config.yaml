@@ -28,6 +28,7 @@ filters:
   preserve_acronyms: true
   acronym_min_length: 3
   acronym_max_length: 10
+  common_words_file: "./common-words.txt"  # case-insensitive filter; empty = disabled
 
 stopwords:
   use_default: true
@@ -83,6 +84,9 @@ mutations:
     - "#"
     - "$"
     - "!!"
+
+credential_scan:
+  enabled: true  # scan pages for plaintext passwords, tokens, keys
 
 output:
   directory: "./output"

@@ -75,6 +75,7 @@ def _emit(
     seen: set[str],
 ) -> None:
     """Add a token to results if not already seen."""
+    token = token.strip(".")
     if not token or token in seen:
         return
     seen.add(token)

@@ -17,6 +17,12 @@ from typing import Any
 from tqdm import tqdm
 
 from modules.confluence import ConfluenceClient
+from modules.credscanner import (
+    CredentialFind,
+    format_credential_line,
+    scan_page_for_credentials,
+    scan_table_adjacency,
+)
 from modules.extractor import PageContent, extract_page
 from modules.filters import compare_dictionary, filter_tokens
 from modules.outputs import write_all_outputs
@@ -203,9 +209,10 @@ def run(args: argparse.Namespace) -> None:
             print("No pages retrieved. Nothing to process.", file=sys.stderr)
             sys.exit(0)
 
-        # Phase 3: Extract and tokenize
+        # Phase 3: Extract, tokenize, and scan for credentials
         logger.info("Phase 3/6: Extracting and tokenizing %d pages", len(pages))
         total_tokens = 0
+        all_cred_finds: list[CredentialFind] = []
         for page_data in tqdm(pages, desc="Processing pages", unit="page"):
             page_content = extract_page(page_data)
 
@@ -232,8 +239,23 @@ def run(args: argparse.Namespace) -> None:
             count = process_page(page_content, cfg, storage, stopwords)
             total_tokens += count
 
+            # Credential scanning
+            if cfg.get("credential_scan", {}).get("enabled", True):
+                cred_finds = scan_page_for_credentials(page_content)
+                cred_finds.extend(scan_table_adjacency(page_content))
+                for find in cred_finds:
+                    storage.upsert_token(
+                        token=find.value,
+                        source=f"{find.space_key}:{find.page_id}",
+                        context=f"credential:{find.pattern_name}",
+                        entropy=shannon_entropy(find.value),
+                        space_key=find.space_key,
+                    )
+                all_cred_finds.extend(cred_finds)
+
         logger.info("Total token insertions: %d", total_tokens)
         logger.info("Unique tokens in database: %d", storage.get_token_count())
+        logger.info("Potential credentials found: %d", len(all_cred_finds))
 
         # Phase 4: Dictionary comparison
         dict_cfg = cfg.get("dictionary", {})
@@ -263,7 +285,7 @@ def run(args: argparse.Namespace) -> None:
         # Phase 6: Generate outputs
         logger.info("Phase 6/6: Generating output files to %s",
                      cfg.get("output", {}).get("directory", "./output"))
-        output_paths = write_all_outputs(storage, cfg)
+        output_paths = write_all_outputs(storage, cfg, credential_finds=all_cred_finds)
 
         elapsed = time.time() - start_time
         token_count = storage.get_token_count()
